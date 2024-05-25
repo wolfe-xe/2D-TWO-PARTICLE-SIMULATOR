@@ -13,7 +13,7 @@ circle cir;
 SDL_Window* window;
 SDL_Renderer* renderer;
 SDL_Texture* texture;
-SDL_Surface* header_surface, *c_surface;
+SDL_Surface* surface;
 TTF_Font* font;
 
 int game_is_running = FALSE;
@@ -70,18 +70,7 @@ int initializeWindow(void) {
 	if (!font) {
 		fprintf(stderr, "ERROR LOADING FONT \n");
 	}
-
-	header_surface = TTF_RenderText_Solid(font, "collision_count:", (SDL_Color{ 255,255,255,255 }));
-	if (!header_surface) {
-		fprintf(stderr, "SURFACE CREATION FAILED \n");
-	}
-
-	texture = SDL_CreateTextureFromSurface(renderer, header_surface);
-	if (!texture) {
-		fprintf(stderr, "TEXTURE CREATION FAILED \n");
-	}
 }
-
 void processInput() {
 	SDL_Event event;
 	SDL_PollEvent(&event);
@@ -110,6 +99,18 @@ void start() {
 	collision_count = 0;
 }
 
+void textRend() {
+	surface = TTF_RenderText_Solid(font, keep_count, (SDL_Color{ 255,255,255,255 }));
+	if (!surface) {
+		fprintf(stderr, "SURFACE CREATION FAILED \n");
+	}
+
+	texture = SDL_CreateTextureFromSurface(renderer, surface);
+	if (!texture) {
+		fprintf(stderr, "TEXTURE CREATION FAILED \n");
+	}
+}
+
 void update() {
 	int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - last_frame_time);
 	if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
@@ -129,7 +130,6 @@ void update() {
 	
 	particle.vy += particle.a * delta_time;
 	particle.y += particle.vy * delta_time;
-
 	int s;
 	s = sprintf_s(keep_count, "%d", collision_count);
 
@@ -137,8 +137,6 @@ void update() {
 	if (particle.x <= 0 || particle.x >= 640) {
 		particle.vx = -particle.vx;
 		collision_count++;
-		c_surface = TTF_RenderText_Solid(font, keep_count, (SDL_Color{ 255,255,255,255 }));
-
 		//particle.a += 10;
 		printf("Collision count: %d\n", collision_count);
 		printf("Acceleration: %f\n", particle.a);
@@ -154,7 +152,10 @@ void update() {
 		printf("VX: %f\n", particle.vx);
 		printf("\n");
 	}
+
+	textRend();
 }
+
 
 void render() {
 	SDL_SetRenderDrawColor(renderer, 25, 25, 25, 55);
@@ -163,18 +164,19 @@ void render() {
 
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	cir.SDL_RenderFillCircle(renderer, particle.x, particle.y, particle.r);
-	SDL_Rect text_rect{
-		text_rect.x = 5,
-		text_rect.y = 5,
-		text_rect.w = 140,
-		text_rect.h = 10
-	};
+
+	//SDL_Rect text_rect{
+	//	text_rect.x = 5,
+	//	text_rect.y = 5,
+	//	text_rect.w = 140,
+	//	text_rect.h = 10
+	//};
 	//SDL_RenderCopy(renderer, texture, NULL, &text_rect);
 
 	SDL_Rect count_text_rect{
-	count_text_rect.x = 115,
+	count_text_rect.x = 640 / 2,
 	count_text_rect.y = 5,
-	count_text_rect.w = 140,
+	count_text_rect.w = 10,
 	count_text_rect.h = 10
 	};
 	SDL_RenderCopy(renderer, texture, NULL, &count_text_rect);
@@ -185,7 +187,7 @@ void render() {
 
 
 void destroyWindow() {
-	SDL_FreeSurface(c_surface);
+	SDL_FreeSurface(surface);
 	TTF_CloseFont(font);
 	TTF_Quit;
 	SDL_DestroyRenderer(renderer);
