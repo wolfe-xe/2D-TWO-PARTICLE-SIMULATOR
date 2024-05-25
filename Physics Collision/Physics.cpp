@@ -12,8 +12,8 @@ circle cir;
 
 SDL_Window* window;
 SDL_Renderer* renderer;
-SDL_Texture* texture;
-SDL_Surface* surface;
+SDL_Texture* texture, * headertex;
+SDL_Surface* surface, * headersurf;
 TTF_Font* font;
 
 int game_is_running = FALSE;
@@ -88,19 +88,9 @@ void processInput() {
 	}
 }
 
-void start() {
-	particle.x = 640 / 2;
-	particle.y = 640 / 2;
-	particle.r = 20;
-	particle.vx = 100;
-	particle.vy = 200;
-	particle.a = 0;
-
-	collision_count = 0;
-}
-
 void textRend() {
 	surface = TTF_RenderText_Solid(font, keep_count, (SDL_Color{ 255,255,255,255 }));
+
 	if (!surface) {
 		fprintf(stderr, "SURFACE CREATION FAILED \n");
 	}
@@ -110,6 +100,32 @@ void textRend() {
 		fprintf(stderr, "TEXTURE CREATION FAILED \n");
 	}
 }
+
+void headertextRend() {
+	headersurf = TTF_RenderText_Solid(font, "collision count: ", (SDL_Color{255,255,255,255}));
+	if (!headersurf) {
+		fprintf(stderr, "SURFACE CREATION FAILED \n");
+	}
+
+	headertex = SDL_CreateTextureFromSurface(renderer, headersurf);
+	if (!headertex) {
+		fprintf(stderr, "TEXTURE CREATION FAILED \n");
+	}
+}
+
+void start() {
+	particle.x = 640 / 2;
+	particle.y = 640 / 2;
+	particle.r = 20;
+	particle.vx = 100;
+	particle.vy = 200;
+	particle.a = 0;
+
+	collision_count = 0;
+
+	headertextRend();
+}
+
 
 void update() {
 	int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - last_frame_time);
@@ -165,18 +181,18 @@ void render() {
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	cir.SDL_RenderFillCircle(renderer, particle.x, particle.y, particle.r);
 
-	//SDL_Rect text_rect{
-	//	text_rect.x = 5,
-	//	text_rect.y = 5,
-	//	text_rect.w = 140,
-	//	text_rect.h = 10
-	//};
-	//SDL_RenderCopy(renderer, texture, NULL, &text_rect);
+	SDL_Rect text_rect{
+		text_rect.x = 5,
+		text_rect.y = 5,
+		text_rect.w = 140,
+		text_rect.h = 10
+	};
+	SDL_RenderCopy(renderer, headertex, NULL, &text_rect);
 
 	SDL_Rect count_text_rect{
-	count_text_rect.x = 640 / 2,
+	count_text_rect.x = 640 / 2 - 180,
 	count_text_rect.y = 5,
-	count_text_rect.w = 10,
+	count_text_rect.w = surface->w/4,
 	count_text_rect.h = 10
 	};
 	SDL_RenderCopy(renderer, texture, NULL, &count_text_rect);
@@ -217,6 +233,8 @@ int main(int argc, char* argv[]) {
 ///		[x]pos, v, a
 /// [x] collision detection
 /// [x] collision response
+/// [x] render text
+/// [] organize code and make functions to take in and print text
 /// [] ui elements
 /// [] multiple balls
 ///		[] sphere collisions
