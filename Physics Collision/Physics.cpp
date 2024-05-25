@@ -1,6 +1,7 @@
 #include <stdio.h>;
 #include <SDL.h>;
 #include <SDL_ttf.h>
+#include <cstdio>
 #include <vector>;
 #include <string>;
 #include <algorithm>;
@@ -12,13 +13,15 @@ circle cir;
 SDL_Window* window;
 SDL_Renderer* renderer;
 SDL_Texture* texture;
-SDL_Surface* surface;
+SDL_Surface* header_surface, *c_surface;
 TTF_Font* font;
 
 int game_is_running = FALSE;
 int last_frame_time = 0;
 int collision_count = 0;
 const float gravity = 9.81f;
+char keep_count[100];
+
 
 struct Particle {
 	// position
@@ -62,18 +65,18 @@ int initializeWindow(void) {
 		return false;
 	}
 
-	font = TTF_OpenFont("OpenSans-Regualr.ttf", 40);	
+	font = TTF_OpenFont("PublicPixel-0W5Kv.ttf", 40);
 	
 	if (!font) {
 		fprintf(stderr, "ERROR LOADING FONT \n");
 	}
 
-	surface = TTF_RenderText_Blended_Wrapped(font, "NO. OF COLLSIONS", (SDL_Color{ 255,255,255,255 }), 500);
-	if (!surface) {
+	header_surface = TTF_RenderText_Solid(font, "collision_count:", (SDL_Color{ 255,255,255,255 }));
+	if (!header_surface) {
 		fprintf(stderr, "SURFACE CREATION FAILED \n");
 	}
 
-	texture = SDL_CreateTextureFromSurface(renderer, surface);
+	texture = SDL_CreateTextureFromSurface(renderer, header_surface);
 	if (!texture) {
 		fprintf(stderr, "TEXTURE CREATION FAILED \n");
 	}
@@ -127,10 +130,15 @@ void update() {
 	particle.vy += particle.a * delta_time;
 	particle.y += particle.vy * delta_time;
 
+	int s;
+	s = sprintf_s(keep_count, "%d", collision_count);
+
 	//collision detection
 	if (particle.x <= 0 || particle.x >= 640) {
 		particle.vx = -particle.vx;
 		collision_count++;
+		c_surface = TTF_RenderText_Solid(font, keep_count, (SDL_Color{ 255,255,255,255 }));
+
 		//particle.a += 10;
 		printf("Collision count: %d\n", collision_count);
 		printf("Acceleration: %f\n", particle.a);
@@ -148,7 +156,6 @@ void update() {
 	}
 }
 
-
 void render() {
 	SDL_SetRenderDrawColor(renderer, 25, 25, 25, 55);
 	SDL_RenderClear(renderer);
@@ -156,12 +163,30 @@ void render() {
 
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 	cir.SDL_RenderFillCircle(renderer, particle.x, particle.y, particle.r);
+	SDL_Rect text_rect{
+		text_rect.x = 5,
+		text_rect.y = 5,
+		text_rect.w = 140,
+		text_rect.h = 10
+	};
+	//SDL_RenderCopy(renderer, texture, NULL, &text_rect);
+
+	SDL_Rect count_text_rect{
+	count_text_rect.x = 115,
+	count_text_rect.y = 5,
+	count_text_rect.w = 140,
+	count_text_rect.h = 10
+	};
+	SDL_RenderCopy(renderer, texture, NULL, &count_text_rect);
+	//SDL_UpperBlit(c_surface, NULL, header_surface, &count_text_rect);
 
 	SDL_RenderPresent(renderer);
 }
 
 
 void destroyWindow() {
+	SDL_FreeSurface(c_surface);
+	TTF_CloseFont(font);
 	TTF_Quit;
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
