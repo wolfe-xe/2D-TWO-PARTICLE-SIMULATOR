@@ -4,5 +4,5 @@
 #define FALSE 0
 
 // FRAMES
-#define FPS 60
+#define FPS 200
 #define FRAME_TARGET_TIME (1000 / FPS)
