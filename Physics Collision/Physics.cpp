@@ -1,7 +1,8 @@
-#include <stdio.h>;
+﻿#include <stdio.h>;
 #include <SDL.h>;
-#include <SDL_ttf.h>
-#include <cstdio>
+#include <SDL_ttf.h>;
+#include <cmath>;
+#include <cstdio>;
 #include <vector>;
 #include <string>;
 #include <algorithm>;
@@ -19,6 +20,7 @@ TTF_Font* font;
 int game_is_running = FALSE;
 int last_frame_time = 0;
 int collision_count = 0;
+int particle_collision_count = 0;
 const float gravity = 9.81f;
 char keep_count[100];
 
@@ -33,6 +35,7 @@ struct Particle {
 	float vy;
 	// acceleration
 	float a;
+	float m;
 }particle;
 
 struct DParticle {
@@ -45,6 +48,7 @@ struct DParticle {
 	float vy;
 	// acceleration
 	float a;
+	float m;
 }dparticle;
 
 int initializeWindow(void) {
@@ -133,17 +137,61 @@ void start() {
 	particle.vx = 100;
 	particle.vy = 200;
 	particle.a = 0;
+	particle.m = 2;
 
 	collision_count = 0;
+	particle_collision_count = 0;
 
 	dparticle.x = 100;
 	dparticle.y = 640 / 2;
 	dparticle.r = 20;
 	dparticle.vx = 100;
 	dparticle.vy = 200;
+	dparticle.m = 1;
 
 
 	headertextRend();
+}
+
+float dotProduct(float vx, float vy, float ux, float uy) {
+	return vx * ux + vy * uy;
+}
+
+float normSquared(float x, float y) {
+	return x * x + y * y;
+}
+
+
+void handleCollision(Particle& p1, DParticle& p2) {
+	// Relative position vector
+	float dx = p1.x - p2.x;
+	float dy = p1.y - p2.y;
+
+	// Relative velocity vector
+	float dvx = p1.vx - p2.vx;
+	float dvy = p1.vy - p2.vy;
+
+	// Compute dot product and norm squared of relative position
+	float dot = dotProduct(dvx, dvy, dx, dy);
+	float norm_sq = normSquared(dx, dy);
+
+	// Mass ratio factors
+	float mass_ratio1 = 2 * p2.m / (p1.m + p2.m);
+	float mass_ratio2 = 2 * p1.m / (p1.m + p2.m);
+
+	// Calculate change in velocity for p1
+	float change_vx1 = mass_ratio1 * (dot / norm_sq) * dx;
+	float change_vy1 = mass_ratio1 * (dot / norm_sq) * dy;
+
+	// Calculate change in velocity for p2
+	float change_vx2 = mass_ratio2 * (dot / norm_sq) * -dx;
+	float change_vy2 = mass_ratio2 * (dot / norm_sq) * -dy;
+
+	// Update velocities
+	p1.vx -= change_vx1;
+	p1.vy -= change_vy1;
+	p2.vx -= change_vx2;
+	p2.vy -= change_vy2;
 }
 
 void update() {
@@ -206,17 +254,20 @@ void update() {
 
 	textRend();
 	
-	/// particle particle collision detection
+	/// particle particle collision detection and response
 	float distanceX = particle.x - dparticle.x;
 	float distanceY = particle.y - dparticle.y;
-
 	float radiiSum = particle.r + dparticle.r;
-
 	if (distanceX * distanceX + distanceY * distanceY <= radiiSum * radiiSum) {
 		printf("Collision Detected \n");
+		particle_collision_count++;
+		printf("Collision Between Particle: %d\n", particle_collision_count);
+		handleCollision(particle, dparticle);
+		printf("Collision Resolved \n");
 	}
-
 }
+
+
 void render() {
 	SDL_SetRenderDrawColor(renderer, 25, 25, 25, 55);
 	SDL_RenderClear(renderer);
@@ -274,18 +325,19 @@ int main(int argc, char* argv[]) {
 /// TODO:
 /// [x] create a sphere
 /// [x] particle dynamics
-///		[x]pos, v, a
+///		[x]pos, v, a, m
 /// [x] collision detection
 /// [x] collision response
 /// [x] render text
-/// [] check for tunneling (CCD)(Linear Interpolation)
-/// [] particle particle collision
-///		[] func to generate more particle
-///
-/// [] organize code and make functions to take in and print text
-/// [] ui elements
-/// [] multiple balls
-///		[] sphere collisions
-///		[] sphere collision responses
-/// [] continuous collision detection to avoid tunneling at high speed
+/// [ ] check for tunneling (CCD)(Linear Interpolation)
+/// [-] particle particle collision and response
+///		[x] multiple balls
+///		[x] collision
+///		[x] response
+///			[x] conservation of momentum (m1 v1′ − m1 v1 = −m2 v2′ + m2 v2 → m1 v1 + m2 v2 = m1 v1′ + m2 v2′)
+///			[x] conservation of kinetic energy (Ki + Ui = Kf + Uf )
+/// [ ] organize code and make functions to take in and print text
+/// [ ] ui elements
+///	[ ] func to generate more particle
+/// 
 /// 
